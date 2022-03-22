@@ -35,6 +35,11 @@ RUN <<EOF
     cp -r dotfiles/.config/* ~/.config
 EOF
 
+RUN <<EOF
+    git clone https://github.com/github/copilot.vim.git \
+      ~/.config/nvim/pack/github/start/copilot.vim
+EOF
+
 # config
 RUN <<EOF
     echo 'fish' >> /root/.bashrc

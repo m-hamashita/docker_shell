@@ -3,13 +3,14 @@ ARG KAGGLE_IMAGE=gcr.io/kaggle-gpu-images/python:latest
 
 FROM $KAGGLE_IMAGE AS base
 
-# fish, ranger, bat, neovim
 RUN <<EOF
+    # fish
     apt-add-repository --yes ppa:fish-shell/release-3
     apt-get update
     apt-get install -y fish vim
     apt-get install language-pack-ja
 
+    # neovim
     pip install ranger-fm
     add-apt-repository --yes ppa:neovim-ppa/unstable
     apt-get update
@@ -26,6 +27,8 @@ RUN <<EOF
     apt purge nodejs npm
     npm install --global yarn
     curl -fsSL https://deno.land/install.sh | sh
+
+    # bat
     curl -LJO https://github.com/sharkdp/bat/releases/download/v0.20.0/bat-musl_0.20.0_amd64.deb
     dpkg -i bat-musl_0.20.0_amd64.deb
 EOF
@@ -54,4 +57,29 @@ EOF
 
 RUN <<EOF
     fish -c "fisher install oh-my-fish/theme-bobthefish"
+EOF
+
+# for jupyter notebook
+RUN <<EOF
+    pip install jupyter-contrib-nbextensions
+    jupyter contrib nbextension install --user
+    jupyter nbextensions_configurator enable --user
+    mkdir -p $(jupyter --data-dir)/nbextensions
+    cd $(jupyter --data-dir)/nbextensions
+    git clone https://github.com/lambdalisue/jupyter-vim-binding vim_binding
+    pip install jupyterthemes
+    jt -t gruvboxd -vim -T -N -f meslo -nf latosans -nfs 10 -tfs 10
+    jupyter nbextension enable vim_binding/vim_binding
+    jupyter nbextension enable hinterland/hinterland
+    pip install isort
+    pip install black
+    jupyter nbextension enable code_prettify/isort
+    jupyter nbextension install https://github.com/drillan/jupyter-black/archive/master.zip --user
+    jupyter nbextension enable jupyter-black-master/jupyter-black
+    jupyter nbextension enable nbdime/index
+    jupyter nbextension enable codefolding/main
+EOF
+
+RUN <<EOF
+    cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
 EOF

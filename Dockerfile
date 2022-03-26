@@ -55,3 +55,30 @@ EOF
 RUN <<EOF
     fish -c "fisher install oh-my-fish/theme-bobthefish"
 EOF
+
+# for jupyter notebook
+RUN <<EOF
+    pip install jupyter-contrib-nbextensions
+    jupyter contrib nbextension install --user
+    jupyter nbextensions_configurator enable --user
+    mkdir -p $(jupyter --data-dir)/nbextensions
+    cd $(jupyter --data-dir)/nbextensions
+    git clone https://github.com/lambdalisue/jupyter-vim-binding vim_binding
+    pip install jupyterthemes
+    jt -t gruvboxd -vim -T -N -f meslo -nf latosans -nfs 10 -tfs 10
+    jupyter nbextension enable vim_binding/vim_binding
+    jupyter nbextension enable hinterland/hinterland
+    pip install isort
+    pip install black
+    jupyter nbextension enable code_prettify/isort
+    jupyter nbextension install https://github.com/drillan/jupyter-black/archive/master.zip --user
+    jupyter nbextension enable jupyter-black-master/jupyter-black
+    jupyter nbextension enable nbdime/index
+    jupyter nbextension enable codefolding/main
+EOF
+
+RUN <<EOF
+    cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
+EOF
+
+RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"

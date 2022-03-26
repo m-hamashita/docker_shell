@@ -34,6 +34,7 @@ RUN <<EOF
 EOF
 
 RUN <<EOF
+    # dotfiles
     git clone https://github.com/m-hamashita/dotfiles
     cp -r dotfiles/.config/* ~/.config
 EOF
@@ -83,3 +84,5 @@ EOF
 RUN <<EOF
     cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
 EOF
+
+RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"

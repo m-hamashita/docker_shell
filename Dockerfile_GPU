@@ -81,13 +81,13 @@ RUN <<EOF
     jupyter nbextension enable jupyter-black-master/jupyter-black
     jupyter nbextension enable nbdime/index
     jupyter nbextension enable codefolding/main
-    cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
 EOF
 
 # for tmux
 RUN <<EOF
+    cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
     cp dotfiles/.tmux.conf ~/.tmux.conf
-    sed -e 's|source "~/.pyenv/versions/4.8.1/lib/python3.8/site-packages/powerline/bindings/tmux/powerline.conf"|source "/opt/conda/lib/python3.7/site-packages/powerline/bindings/tmux/powerline.conf"|g' ~/.tmux.conf > .tmux.tmp.conf && mv .tmux.tmp.conf ~/.tmux.conf
+    sed -e 's|source "~/.pyenv/versions/3.8.1/lib/python3.8/site-packages/powerline/bindings/tmux/powerline.conf"|source "/opt/conda/lib/python3.7/site-packages/powerline/bindings/tmux/powerline.conf"|g' ~/.tmux.conf > .tmux.tmp.conf && mv .tmux.tmp.conf ~/.tmux.conf
 EOF
 
 RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"

@@ -96,3 +96,5 @@ RUN COC_EXTENSIONS=$(nvim --headless +'echo g:coc_global_extensions' +'echo "\n"
   | head -1 | tr -d ",[]'" | tr ' ' '\n') \
   && echo "$COC_EXTENSIONS" \
   | xargs -i sh -c 'nvim --headless +"CocInstall -sync {}" +qa 2> /dev/null && echo "{} installed"'
+
+RUN nvim --headless +"CocInstall -sync coc-pyright" +qa

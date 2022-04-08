@@ -91,3 +91,8 @@ RUN <<EOF
 EOF
 
 RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"
+
+RUN COC_EXTENSIONS=$(nvim --headless +'echo g:coc_global_extensions' +'echo "\n"' +qa 2>&1 \
+  | head -1 | tr -d ",[]'" | tr ' ' '\n') \
+  && echo "$COC_EXTENSIONS" \
+  | xargs -i sh -c 'nvim --headless +"CocInstall -sync {}" +qa 2> /dev/null && echo "{} installed"'

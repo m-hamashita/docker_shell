@@ -1,28 +1,35 @@
 # syntax = docker/dockerfile:1.3-labs
-ARG KAGGLE_IMAGE=gcr.io/kaggle-gpu-images/python:latest
+ARG BASE_IMAGE=pytorch/pytorch:1.11.0-cuda11.3-cudnn8-devel
 
-FROM $KAGGLE_IMAGE AS base
+FROM $BASE_IMAGE AS base
 
 RUN <<EOF
     # fish
+    apt-get update
+    apt-get install -y software-properties-common
     apt-add-repository --yes ppa:fish-shell/release-3
     apt-get update
     apt-get install -y fish vim
-    apt-get install language-pack-ja
+    apt-get install -y language-pack-ja
+    apt install -y curl
+    apt-get -y install git
+    apt-get -y install zip
+EOF
 
+RUN <<EOF
     # neovim
     pip install ranger-fm
     add-apt-repository --yes ppa:neovim-ppa/unstable
     apt-get update
     apt install -y neovim
-
     pip install pynvim
+
     curl https://raw.githubusercontent.com/Shougo/dein.vim/master/bin/installer.sh > installer.sh
     sh ./installer.sh ~/.cache/dein
 
     apt-get install -y nodejs-dev node-gyp libssl1.0-dev
     apt-get install -y npm
-    sudo npm install -y n -g
+    npm install -y n -g
     n lts
     apt purge nodejs npm
     npm install --global yarn
@@ -34,17 +41,19 @@ RUN <<EOF
 
     pip install powerline-status
     # 日本語サポート
-    sudo apt-get -y install language-pack-ja
+    apt-get -y install language-pack-ja
+    curl -fsSL https://deno.land/install.sh | sh
 EOF
 
 RUN <<EOF
     # dotfiles
     git clone https://github.com/m-hamashita/dotfiles
-    cp -r dotfiles/.config/* ~/.config
+    mv dotfiles/.config ~/
     git clone https://github.com/github/copilot.vim.git \
       ~/.config/nvim/pack/github/start/copilot.vim
 EOF
 
+RUN file="$(ls -la /root/.config)" && echo $file
 
 # config
 RUN <<EOF
@@ -90,9 +99,12 @@ RUN <<EOF
     sed -e 's|source "~/.pyenv/versions/3.8.1/lib/python3.8/site-packages/powerline/bindings/tmux/powerline.conf"|source "/opt/conda/lib/python3.7/site-packages/powerline/bindings/tmux/powerline.conf"|g' ~/.tmux.conf > .tmux.tmp.conf && mv .tmux.tmp.conf ~/.tmux.conf
 EOF
 
+
 RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"
 
 RUN COC_EXTENSIONS=$(nvim --headless +'echo g:coc_global_extensions' +'echo "\n"' +qa 2>&1 \
   | head -1 | tr -d ",[]'" | tr ' ' '\n') \
   && echo "$COC_EXTENSIONS" \
   | xargs -i sh -c 'nvim --headless +"CocInstall -sync {}" +qa 2> /dev/null && echo "{} installed"'
+
+RUN nvim --headless +"CocInstall -sync coc-pyright" +qa

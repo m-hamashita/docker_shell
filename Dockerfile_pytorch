@@ -108,3 +108,21 @@ RUN COC_EXTENSIONS=$(nvim --headless +'echo g:coc_global_extensions' +'echo "\n"
   | xargs -i sh -c 'nvim --headless +"CocInstall -sync {}" +qa 2> /dev/null && echo "{} installed"'
 
 RUN nvim --headless +"CocInstall -sync coc-pyright" +qa
+
+RUN <<EOF
+    pip install transformers==4.16.2
+    pip install tokenizers==0.11.0
+    pip install pandas
+    pip install pandas-profiling
+    pip install jupyter
+    pip install tqdm
+    pip install optuna
+    pip install numba
+    pip install nltk
+    pip install lightgbm
+    pip install scikit-learn
+    pip install scipy
+    pip install kaggle
+    pip install wandb
+    pip install onnxruntime
+EOF

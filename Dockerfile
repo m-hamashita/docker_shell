@@ -3,13 +3,14 @@ ARG KAGGLE_IMAGE=kaggle/python:latest
 
 FROM $KAGGLE_IMAGE AS base
 
-# fish, ranger, bat, neovim
 RUN <<EOF
+    # fish
     apt-add-repository --yes ppa:fish-shell/release-3
     apt-get update
     apt-get install -y fish vim
     apt-get install language-pack-ja
 
+    # neovim
     pip install ranger-fm
     add-apt-repository --yes ppa:neovim-ppa/unstable
     apt-get update
@@ -26,19 +27,24 @@ RUN <<EOF
     apt purge nodejs npm
     npm install --global yarn
     curl -fsSL https://deno.land/install.sh | sh
+
+    # bat
     curl -LJO https://github.com/sharkdp/bat/releases/download/v0.20.0/bat-musl_0.20.0_amd64.deb
     dpkg -i bat-musl_0.20.0_amd64.deb
+
+    pip install powerline-status
+    # 日本語サポート
+    sudo apt-get -y install language-pack-ja
 EOF
 
 RUN <<EOF
+    # dotfiles
     git clone https://github.com/m-hamashita/dotfiles
     cp -r dotfiles/.config/* ~/.config
-EOF
-
-RUN <<EOF
     git clone https://github.com/github/copilot.vim.git \
       ~/.config/nvim/pack/github/start/copilot.vim
 EOF
+
 
 # config
 RUN <<EOF
@@ -47,9 +53,10 @@ RUN <<EOF
     echo 'set -x LD_LIBRARY_PATH /usr/lib64-nvidia' >> /root/.config/fish/config.fish
     echo 'set -x PYTHONDONTWRITEBYTECODE 1' >> /root/.config/fish/config.fish
     echo 'set -x TF_CPP_MIN_LOG_LEVEL 2' >> /root/.config/fish/config.fish
-    echo 'set -x TERM xterm' >> /root/.config/fish/config.fish
+    echo 'set -x TERM xterm-256color' >> /root/.config/fish/config.fish
     echo 'set -x DENO_INSTALL "/root/.deno"' >> /root/.config/fish/config.fish
     echo 'set -x PATH "$DENO_INSTALL/bin:$PATH"' >> /root/.config/fish/config.fish
+    echo 'let g:python3_host_prog = "/opt/conda/bin/python3"' >> /root/.config/nvim/init/common_settings.vim
 EOF
 
 RUN <<EOF
@@ -67,7 +74,6 @@ RUN <<EOF
     pip install jupyterthemes
     jt -t gruvboxd -vim -T -N -f meslo -nf latosans -nfs 10 -tfs 10
     jupyter nbextension enable vim_binding/vim_binding
-    jupyter nbextension enable hinterland/hinterland
     pip install isort
     pip install black
     jupyter nbextension enable code_prettify/isort
@@ -77,8 +83,18 @@ RUN <<EOF
     jupyter nbextension enable codefolding/main
 EOF
 
+# for tmux
 RUN <<EOF
     cp dotfiles/.jupyter/custom/custom.js ~/.jupyter/custom/custom.js
+    cp dotfiles/.tmux.conf ~/.tmux.conf
+    sed -e 's|source "~/.pyenv/versions/3.8.1/lib/python3.8/site-packages/powerline/bindings/tmux/powerline.conf"|source "/opt/conda/lib/python3.7/site-packages/powerline/bindings/tmux/powerline.conf"|g' ~/.tmux.conf > .tmux.tmp.conf && mv .tmux.tmp.conf ~/.tmux.conf
 EOF
 
 RUN nvim --headless -c ':silent! call dein#install()' -c ":silent! call coc#util#install()" -c ":sleep 30" -c ":qa!"
+
+RUN COC_EXTENSIONS=$(nvim --headless +'echo g:coc_global_extensions' +'echo "\n"' +qa 2>&1 \
+  | head -1 | tr -d ",[]'" | tr ' ' '\n') \
+  && echo "$COC_EXTENSIONS" \
+  | xargs -i sh -c 'nvim --headless +"CocInstall -sync {}" +qa 2> /dev/null && echo "{} installed"'
+
+RUN nvim --headless +"CocInstall -sync coc-pyright" +qa

@@ -3,12 +3,13 @@ ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:24.03-py3
 
 FROM $BASE_IMAGE AS base
 
-RUN pip3 install --upgrade transformers
-
 # colmap
 RUN apt-get update -y
 RUN apt-get install python3 python3-pip unzip wget -y
 #install ceres-solver and colmap
+# for ceres-solver(libcgal-qt5-dev, libatlas-base-dev, libsuitesparse-dev)
+# for flann(liblz4-dev)
+# for colmap(libsqlite3-dev, libmetis-dev)
 RUN apt-get install \
     git \
     cmake \
@@ -27,35 +28,31 @@ RUN apt-get install \
     libglew-dev \
     qtbase5-dev \
     libqt5opengl5-dev \
-    libcgal-dev -y
+    libcgal-dev \
+    libcgal-qt5-dev \
+    libatlas-base-dev \
+    libsuitesparse-dev \
+    liblz4-dev \
+    libsqlite3-dev \
+    libmetis-dev -y
 
-RUN apt-get install libcgal-qt5-dev -y
-RUN apt-get install libatlas-base-dev libsuitesparse-dev -y
 RUN git clone https://ceres-solver.googlesource.com/ceres-solver /ceres-solver
 WORKDIR /ceres-solver
 RUN git checkout $(git rev-parse --short HEAD)
 RUN mkdir build
 WORKDIR /ceres-solver/build
-RUN cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF
-RUN make -j4
-RUN make install
+RUN cmake .. -DBUILD_TESTING=OFF -DBUILD_EXAMPLES=OFF -GNinja
+RUN ninja
+RUN ninja install
 WORKDIR /
 
-# RUN apt-get install libflann-dev -y
-
-RUN apt-get install -y liblz4-dev
 RUN git clone git://github.com/mariusmuja/flann.git /flann
 WORKDIR /flann
 RUN mkdir build
 WORKDIR /flann/build
-RUN cmake .. -DCMAKE_CUDA_ARCHITECTURES=native
-RUN make -j4
-RUN make install
-
-
-
-RUN apt-get install libsqlite3-dev -y
-RUN apt-get install libmetis-dev -y
+RUN cmake .. -DCMAKE_CUDA_ARCHITECTURES=native -GNinja
+RUN ninja
+RUN ninja install
 
 RUN git clone https://github.com/colmap/colmap.git /colmap
 WORKDIR /colmap
@@ -65,15 +62,14 @@ RUN git config --global user.email "you@example.com" && git config --global user
 RUN git cherry-pick 71cebde85b5ce290c93f67326eea7c1b1c0cea97
 RUN mkdir build
 WORKDIR /colmap/build
-# RUN sed -i '/#include "thirdparty\/LSD\/lsd.h"/a #include <memory>' /colmap/src/colmap/image/line.cc
-RUN cmake .. -DCMAKE_CUDA_ARCHITECTURES=native
-RUN make -j
-RUN make install
+RUN cmake .. -DCMAKE_CUDA_ARCHITECTURES=native -GNinja
+RUN ninja
+RUN ninja install
 WORKDIR /
-
 
 RUN pip3 install git+https://github.com/mihaidusmanu/pycolmap
 RUN pip3 install --upgrade \
+    transformers \
     scikit-learn \
     ipywidgets \
     polars \
